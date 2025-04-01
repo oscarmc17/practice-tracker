@@ -8,6 +8,7 @@ import {
     Easing,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
+import { useSession } from "../../context/SessionContext";
 
 const CIRCLE_RADIUS = 150;
 const STROKE_WIDTH = 6;
@@ -22,6 +23,7 @@ const App = () => {
     const [startTime, setStartTime] = useState(null);
 
     const animatedValue = useState(new Animated.Value(0))[0];
+    const { addSession } = useSession();
 
     useEffect(() => {
         let interval;
@@ -56,6 +58,7 @@ const App = () => {
 
     const handleStop = () => {
         setIsRunning(false);
+        addSession(seconds); // Record the session
         setTotalTime((prev) => prev + seconds);
         setSeconds(0);
         setElapsedTime(0);
