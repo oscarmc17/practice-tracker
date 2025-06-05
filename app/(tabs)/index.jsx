@@ -21,6 +21,7 @@ const App = () => {
     const [elapsedTime, setElapsedTime] = useState(0);
     const [animationProgress, setAnimationProgress] = useState(0);
     const [startTime, setStartTime] = useState(null);
+    const [hasSessionStarted, setHasSessionStarted] = useState(false);
 
     const animatedValue = useState(new Animated.Value(0))[0];
     const { addSession } = useSession();
@@ -36,16 +37,22 @@ const App = () => {
     }, [isRunning]);
 
     const handleStart = () => {
-        setIsRunning(true);
+        if (!isRunning) {
+            setIsRunning(true);
+            setHasSessionStarted(true);
 
-        Animated.timing(animatedValue, {
-            toValue: 1,
-            duration: (1 - animationProgress) * 5000,
-            easing: Easing.linear,
-            useNativeDriver: false,
-        }).start();
+            // Stop any ongoing animation before starting a new one
+            animatedValue.stopAnimation();
 
-        setStartTime(Date.now() - elapsedTime * 1000);
+            Animated.timing(animatedValue, {
+                toValue: 1,
+                duration: (1 - animationProgress) * 5000,
+                easing: Easing.linear,
+                useNativeDriver: false,
+            }).start();
+
+            setStartTime(Date.now() - elapsedTime * 1000);
+        }
     };
 
     const handlePause = () => {
@@ -57,9 +64,13 @@ const App = () => {
     };
 
     const handleStop = () => {
+        // Only record a session if a session was started and time > 0
+        if (hasSessionStarted && seconds > 0) {
+            addSession(seconds); // Record the session
+            setTotalTime((prev) => prev + seconds);
+        }
         setIsRunning(false);
-        addSession(seconds); // Record the session
-        setTotalTime((prev) => prev + seconds);
+        setHasSessionStarted(false);
         setSeconds(0);
         setElapsedTime(0);
         setAnimationProgress(0);
