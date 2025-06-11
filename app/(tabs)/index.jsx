@@ -12,20 +12,25 @@ import { useSession } from "../../context/SessionContext";
 
 const CIRCLE_RADIUS = 150;
 const STROKE_WIDTH = 6;
-const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
+// const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
+
+const OUTLINE_GREY = "#D0D0D0";
+const OUTLINE_GREEN = "#32CD32";
+const OUTLINE_CYCLE_MS = 5000;
 
 const App = () => {
     const [seconds, setSeconds] = useState(0);
     const [isRunning, setIsRunning] = useState(false);
     const [totalTime, setTotalTime] = useState(0);
     const [elapsedTime, setElapsedTime] = useState(0);
-    const [animationProgress, setAnimationProgress] = useState(0);
+    // const [animationProgress, setAnimationProgress] = useState(0);
     const [startTime, setStartTime] = useState(null);
     const [hasSessionStarted, setHasSessionStarted] = useState(false);
 
     const animatedValue = useState(new Animated.Value(0))[0];
     const { addSession } = useSession();
 
+    // Timer logic unchanged
     useEffect(() => {
         let interval;
         if (isRunning) {
@@ -36,37 +41,47 @@ const App = () => {
         return () => clearInterval(interval);
     }, [isRunning]);
 
+    // Outline animation: always in sync with timer
+    const outlineAnim = useState(new Animated.Value(0))[0];
+    useEffect(() => {
+        if (isRunning || hasSessionStarted) {
+            // Calculate progress in current 5s cycle
+            const ms = (seconds % 5) * 1000;
+            const now = Date.now();
+            // Animate to the correct value for smoothness
+            Animated.timing(outlineAnim, {
+                toValue: ms / OUTLINE_CYCLE_MS,
+                duration: 250,
+                useNativeDriver: false,
+            }).start();
+        } else {
+            outlineAnim.setValue(0);
+        }
+    }, [seconds, isRunning, hasSessionStarted, outlineAnim]);
+
+    // Also update outlineAnim immediately on stop
+    useEffect(() => {
+        if (!isRunning && !hasSessionStarted) {
+            outlineAnim.setValue(0);
+        }
+    }, [isRunning, hasSessionStarted, outlineAnim]);
+
     const handleStart = () => {
         if (!isRunning) {
             setIsRunning(true);
             setHasSessionStarted(true);
-
-            // Stop any ongoing animation before starting a new one
-            animatedValue.stopAnimation();
-
-            Animated.timing(animatedValue, {
-                toValue: 1,
-                duration: (1 - animationProgress) * 5000,
-                easing: Easing.linear,
-                useNativeDriver: false,
-            }).start();
-
             setStartTime(Date.now() - elapsedTime * 1000);
         }
     };
 
     const handlePause = () => {
         setIsRunning(false);
-        animatedValue.stopAnimation((currentValue) => {
-            setAnimationProgress(currentValue);
-        });
         setElapsedTime((prev) => prev + (Date.now() - startTime) / 1000);
     };
 
     const handleStop = () => {
-        // Only record a session if a session was started and time > 0
         if (hasSessionStarted && seconds > 0) {
-            addSession(seconds); // Record the session
+            addSession(seconds);
             setTotalTime((prev) => prev + seconds);
         }
         setIsRunning(false);
@@ -77,44 +92,41 @@ const App = () => {
         animatedValue.setValue(0);
     };
 
-    const progressAnimation = animatedValue.interpolate({
-        inputRange: [0, 1],
-        outputRange: [CIRCUMFERENCE, 0],
-    });
-
     const formatTime = (seconds) => {
         const hrs = Math.floor(seconds / 3600);
         const mins = Math.floor((seconds % 3600) / 60);
         const secs = seconds % 60;
-        return `${hrs}:${mins < 10 ? "0" : ""}${mins}:${
-            secs < 10 ? "0" : ""
-        }${secs}`;
+        const pad = (n) => n.toString().padStart(2, "0");
+        return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
     };
+
+    // Interpolate outline color and opacity
+    const outlineColor = outlineAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [OUTLINE_GREY, OUTLINE_GREEN],
+    });
+    const outlineOpacity = outlineAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.7, 1],
+    });
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Practice Tracker</Text>
+            <Text style={styles.title}>Music Practice Tracker</Text>
+            <Text style={styles.description}>
+                Track your practice sessions to improve your skills
+            </Text>
             <View style={styles.timerWrapper}>
                 <Svg height="320" width="320" viewBox="0 0 320 320">
-                    <Circle
-                        cx="160"
-                        cy="160"
-                        r={CIRCLE_RADIUS}
-                        stroke="#D0D0D0"
-                        strokeWidth={STROKE_WIDTH}
-                        fill="none"
-                    />
+                    {/* Animated outline only */}
                     <AnimatedCircle
                         cx="160"
                         cy="160"
                         r={CIRCLE_RADIUS}
-                        stroke="#32CD32"
+                        stroke={outlineColor}
                         strokeWidth={STROKE_WIDTH}
                         fill="none"
-                        strokeDasharray={CIRCUMFERENCE}
-                        strokeDashoffset={progressAnimation}
-                        strokeLinecap="round"
-                        transform="rotate(-90 160 160)"
+                        opacity={outlineOpacity}
                     />
                 </Svg>
                 <Text style={styles.timer}>{formatTime(seconds)}</Text>
@@ -140,7 +152,7 @@ const App = () => {
                 </TouchableOpacity>
             </View>
             <View style={styles.totalTimeContainer}>
-                <Text style={styles.totalTimeLabel}>Total Time:</Text>
+                <Text style={styles.totalTimeLabel}>Total Practice Time:</Text>
                 {totalTime > 0 && (
                     <Text style={styles.totalTime}>
                         {formatTime(totalTime)}
