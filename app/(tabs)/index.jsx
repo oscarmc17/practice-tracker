@@ -23,7 +23,7 @@ const App = () => {
     const [isRunning, setIsRunning] = useState(false);
     const [totalTime, setTotalTime] = useState(0);
     const [elapsedTime, setElapsedTime] = useState(0);
-    // const [animationProgress, setAnimationProgress] = useState(0);
+    const [animationProgress, setAnimationProgress] = useState(0);
     const [startTime, setStartTime] = useState(null);
     const [hasSessionStarted, setHasSessionStarted] = useState(false);
 
@@ -112,7 +112,7 @@ const App = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Music Practice Tracker</Text>
+            <Text style={styles.title}>Music Practice Timer</Text>
             <Text style={styles.description}>
                 Track your practice sessions to improve your skills
             </Text>
@@ -129,6 +129,7 @@ const App = () => {
                         opacity={outlineOpacity}
                     />
                 </Svg>
+                <Text style={styles.sessionLabel}>Current Session</Text>
                 <Text style={styles.timer}>{formatTime(seconds)}</Text>
             </View>
             <View style={styles.buttonContainer}>
@@ -191,6 +192,13 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         color: "#333",
         textAlign: "center",
+    },
+    sessionLabel: {
+        position: "absolute",
+        fontSize: 18,
+        fontWeight: "500",
+        top: "34%",
+        color: "#333"
     },
     buttonContainer: {
         flexDirection: "row",
