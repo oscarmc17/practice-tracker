@@ -5,50 +5,47 @@ import {
     TouchableOpacity,
     StyleSheet,
     Animated,
-    Easing,
 } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useSession } from "../../context/SessionContext";
 
 const CIRCLE_RADIUS = 150;
 const STROKE_WIDTH = 6;
-// const CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
 
 const OUTLINE_GREY = "#D0D0D0";
 const OUTLINE_GREEN = "#32CD32";
 const OUTLINE_CYCLE_MS = 5000;
 
-const App = () => {
-    const [seconds, setSeconds] = useState(0);
-    const [isRunning, setIsRunning] = useState(false);
-    const [totalTime, setTotalTime] = useState(0);
-    const [elapsedTime, setElapsedTime] = useState(0);
-    const [animationProgress, setAnimationProgress] = useState(0);
-    const [startTime, setStartTime] = useState(null);
-    const [hasSessionStarted, setHasSessionStarted] = useState(false);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+const App: React.FC = () => {
+    const [seconds, setSeconds] = useState<number>(0);
+    const [isRunning, setIsRunning] = useState<boolean>(false);
+    const [totalTime, setTotalTime] = useState<number>(0);
+    const [elapsedTime, setElapsedTime] = useState<number>(0);
+    const [animationProgress, setAnimationProgress] = useState<number>(0);
+    const [startTime, setStartTime] = useState<number | null>(null);
+    const [hasSessionStarted, setHasSessionStarted] = useState<boolean>(false);
 
     const animatedValue = useState(new Animated.Value(0))[0];
     const { addSession } = useSession();
 
-    // Timer logic unchanged
     useEffect(() => {
-        let interval;
+        let interval: NodeJS.Timeout | undefined;
         if (isRunning) {
             interval = setInterval(() => {
                 setSeconds((prev) => prev + 1);
             }, 1000);
         }
-        return () => clearInterval(interval);
+        return () => {
+            if (interval) clearInterval(interval);
+        };
     }, [isRunning]);
 
-    // Outline animation: always in sync with timer
     const outlineAnim = useState(new Animated.Value(0))[0];
     useEffect(() => {
         if (isRunning || hasSessionStarted) {
-            // Calculate progress in current 5s cycle
             const ms = (seconds % 5) * 1000;
-            const now = Date.now();
-            // Animate to the correct value for smoothness
             Animated.timing(outlineAnim, {
                 toValue: ms / OUTLINE_CYCLE_MS,
                 duration: 250,
@@ -59,7 +56,6 @@ const App = () => {
         }
     }, [seconds, isRunning, hasSessionStarted, outlineAnim]);
 
-    // Also update outlineAnim immediately on stop
     useEffect(() => {
         if (!isRunning && !hasSessionStarted) {
             outlineAnim.setValue(0);
@@ -76,7 +72,9 @@ const App = () => {
 
     const handlePause = () => {
         setIsRunning(false);
-        setElapsedTime((prev) => prev + (Date.now() - startTime) / 1000);
+        if (startTime !== null) {
+            setElapsedTime((prev) => prev + (Date.now() - startTime) / 1000);
+        }
     };
 
     const handleStop = () => {
@@ -92,15 +90,14 @@ const App = () => {
         animatedValue.setValue(0);
     };
 
-    const formatTime = (seconds) => {
+    const formatTime = (seconds: number): string => {
         const hrs = Math.floor(seconds / 3600);
         const mins = Math.floor((seconds % 3600) / 60);
         const secs = seconds % 60;
-        const pad = (n) => n.toString().padStart(2, "0");
+        const pad = (n: number) => n.toString().padStart(2, "0");
         return `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
     };
 
-    // Interpolate outline color and opacity
     const outlineColor = outlineAnim.interpolate({
         inputRange: [0, 1],
         outputRange: [OUTLINE_GREY, OUTLINE_GREEN],
@@ -118,15 +115,14 @@ const App = () => {
             </Text>
             <View style={styles.timerWrapper}>
                 <Svg height="320" width="320" viewBox="0 0 320 320">
-                    {/* Animated outline only */}
                     <AnimatedCircle
                         cx="160"
                         cy="160"
                         r={CIRCLE_RADIUS}
-                        stroke={outlineColor}
+                        stroke={outlineColor as any}
                         strokeWidth={STROKE_WIDTH}
                         fill="none"
-                        opacity={outlineOpacity}
+                        opacity={outlineOpacity as any}
                     />
                 </Svg>
                 <Text style={styles.sessionLabel}>Current Session</Text>
@@ -164,8 +160,6 @@ const App = () => {
     );
 };
 
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -180,6 +174,12 @@ const styles = StyleSheet.create({
         color: "#333",
         textAlign: "center",
         marginTop: 100,
+    },
+    description: {
+        fontSize: 16,
+        color: "#666",
+        textAlign: "center",
+        marginVertical: 10,
     },
     timerWrapper: {
         justifyContent: "center",
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "500",
         top: "34%",
-        color: "#333"
+        color: "#333",
     },
     buttonContainer: {
         flexDirection: "row",

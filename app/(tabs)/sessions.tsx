@@ -1,15 +1,23 @@
 import React, { useMemo, useState } from "react";
-import { Text, View, StyleSheet, FlatList } from "react-native";
+import { Text, View, StyleSheet, FlatList, ListRenderItem } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { useSession } from "../../context/SessionContext";
 
+interface Session {
+    id: number;
+    duration: number;
+    timestamp: string;
+}
+
+type SessionsByDate = Record<string, Session[]>;
+
 const Sessions = () => {
     const { sessions } = useSession();
-    const [selectedDate, setSelectedDate] = useState(null);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
     // Group sessions by date
-    const sessionsByDate = useMemo(() => {
-        return sessions.reduce((acc, session) => {
+    const sessionsByDate: SessionsByDate = useMemo(() => {
+        return sessions.reduce<SessionsByDate>((acc, session) => {
             const date = new Date(session.timestamp)
                 .toISOString()
                 .split("T")[0];
@@ -21,7 +29,7 @@ const Sessions = () => {
 
     // Create marking data for the calendar
     const markedDates = useMemo(() => {
-        const markings = {};
+        const markings: Record<string, any> = {};
         Object.keys(sessionsByDate).forEach((date) => {
             const sessionCount = sessionsByDate[date].length;
             markings[date] = {
@@ -34,7 +42,7 @@ const Sessions = () => {
         return markings;
     }, [sessionsByDate]);
 
-    const renderSession = ({ item }) => (
+    const renderSession: ListRenderItem<Session> = ({ item }) => (
         <View style={styles.sessionItem}>
             <Text style={styles.sessionText}>
                 Duration: {formatTime(item.duration)}
@@ -44,8 +52,8 @@ const Sessions = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Sessions</Text>
-            <Calendar
+            <Text style={styles.header}>Recent Sessions</Text>
+            <Calendar 
                 markingType="multi-dot"
                 markedDates={markedDates}
                 style={styles.calendar}
@@ -54,7 +62,7 @@ const Sessions = () => {
                     todayTextColor: "#32CD32",
                     arrowColor: "#32CD32",
                 }}
-                onDayPress={(day) => {
+                onDayPress={(day: { dateString: string }) => {
                     const date = day.dateString;
                     if (sessionsByDate[date]) {
                         setSelectedDate(date);
@@ -77,7 +85,7 @@ const Sessions = () => {
     );
 };
 
-const formatTime = (seconds) => {
+const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
