@@ -163,7 +163,7 @@ const App: React.FC = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: "space-around",
+        justifyContent: "space-evenly",
         alignItems: "center",
         backgroundColor: "#F8F8F8",
         paddingVertical: 40,
@@ -195,10 +195,10 @@ const styles = StyleSheet.create({
     },
     sessionLabel: {
         position: "absolute",
-        fontSize: 18,
+        fontSize: 17,
         fontWeight: "500",
         top: "34%",
-        color: "#333",
+        color: "#6b7280",
     },
     buttonContainer: {
         flexDirection: "row",

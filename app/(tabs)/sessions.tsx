@@ -11,16 +11,23 @@ interface Session {
 
 type SessionsByDate = Record<string, Session[]>;
 
+function getLocalDateString(isoString: string) {
+    // Always get the local date (YYYY-MM-DD) from ISO string with offset
+    const d = new Date(isoString);
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, "0");
+    const day = d.getDate().toString().padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
 const Sessions = () => {
     const { sessions } = useSession();
     const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-    // Group sessions by date
+    // Group sessions by local date
     const sessionsByDate: SessionsByDate = useMemo(() => {
         return sessions.reduce<SessionsByDate>((acc, session) => {
-            const date = new Date(session.timestamp)
-                .toISOString()
-                .split("T")[0];
+            const date = getLocalDateString(session.timestamp);
             if (!acc[date]) acc[date] = [];
             acc[date].push(session);
             return acc;
@@ -39,8 +46,16 @@ const Sessions = () => {
                 }), // Up to 2 dots
             };
         });
+        // Highlight selected date with a lighter, semi-transparent green
+        if (selectedDate) {
+            markings[selectedDate] = {
+                ...(markings[selectedDate] || {}),
+                selected: true,
+                selectedColor: "rgba(50, 205, 50, 0.50)", // lighter, transparent green
+            };
+        }
         return markings;
-    }, [sessionsByDate]);
+    }, [sessionsByDate, selectedDate]);
 
     const renderSession: ListRenderItem<Session> = ({ item }) => (
         <View style={styles.sessionItem}>
@@ -53,7 +68,7 @@ const Sessions = () => {
     return (
         <View style={styles.container}>
             <Text style={styles.header}>Recent Sessions</Text>
-            <Calendar 
+            <Calendar
                 markingType="multi-dot"
                 markedDates={markedDates}
                 style={styles.calendar}
@@ -63,12 +78,7 @@ const Sessions = () => {
                     arrowColor: "#32CD32",
                 }}
                 onDayPress={(day: { dateString: string }) => {
-                    const date = day.dateString;
-                    if (sessionsByDate[date]) {
-                        setSelectedDate(date);
-                    } else {
-                        setSelectedDate(null);
-                    }
+                    setSelectedDate(day.dateString);
                 }}
             />
             {selectedDate && sessionsByDate[selectedDate] && (
